@@ -1,13 +1,14 @@
 {
-  "name": "search-as-a-service",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "name": "root",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "lerna": "^8.1.9"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "workspaces": ["services/*"]
+  "scripts": {
+    "start": "lerna run start"
+  }
 }

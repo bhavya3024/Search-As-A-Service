@@ -1,17 +1,26 @@
 {
-  "name": "services",
+  "name": "crawler",
   "version": "1.0.0",
-  "description": "",
+  "description": "microservice for crawling APIs",
+  "author": "Bhavya Dhiman <bhavyadhiman7@gmail.com>",
+  "homepage": "https://github.com/bhavya3024/search-as-a-service#readme",
+  "license": "ISC",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bhavya3024/search-as-a-service.git"
+  },
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bhavya3024/search-as-a-service/issues"
+  },
   "dependencies": {
-    "axios": "^1.7.9",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.1"
   }
 }
