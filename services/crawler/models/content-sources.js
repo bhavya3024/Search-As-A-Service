@@ -13,6 +13,10 @@ const contentSourceSchema = new mongoose.Schema({
     establishedYear: {
         type: Number,
         required: false
+    },
+    logo: {
+        type: String,
+        required: false,
     }
 }, { timestamps: true });
 

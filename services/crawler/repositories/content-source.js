@@ -1,11 +1,12 @@
 const { default: mongoose } = require('mongoose');
 const contentSourceSchema = require('../models/content-sources');
 
-exports.create = async ({ name, homepage, establishedYear }) => {
+exports.create = async ({ name, homepage, establishedYear, logo }) => {
     const newContentSource = await contentSourceSchema.create({
         name,
         homepage,
         establishedYear,
+        logo,
     });
     return newContentSource;
 };
@@ -23,7 +24,7 @@ exports.list = async ({ limit, page, name }) => {
     return getContentSources;
 };
 
-exports.update = async (id, { name, establishedYear, url }) => {
+exports.update = async (id, { name, establishedYear, url, logo }) => {
     const updates = {};
     if (name) {
         updates.name = name;
@@ -34,8 +35,12 @@ exports.update = async (id, { name, establishedYear, url }) => {
     if (url) {
         updates.url = url;
     }
+
+    if (logo) {
+        updates.logo = logo;
+    }
     await contentSourceSchema.updateOne({
-        _id: new mongoose.Types.ObjectId(id),
+        _id: new mongoose.Schema.ObjectId(id),
     }, {
         ...updates
     });
@@ -47,5 +52,5 @@ exports.getById = async (id) => {
 };
 
 exports.deleteById = async (id) => {
-    await contentSourceSchema.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+    await contentSourceSchema.deleteOne({ _id: new mongoose.Schema.ObjectId(id), });
 };

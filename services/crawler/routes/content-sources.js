@@ -1,8 +1,11 @@
 const router = require('express').Router();
-const contentSourceContoller = require('../controllers/content-source');
+const multer = require('multer');
+const contentSourceContoller = require('../controllers/content-sources');
+const upload = multer({ dest: 'temp/' });
 
-router.post('/', contentSourceContoller.create);
+router.post('/', upload.single('logo'), contentSourceContoller.create);
 router.get('/', contentSourceContoller.getAll);
+router.get('/:id', contentSourceContoller.getById);
 router.patch('/:id', contentSourceContoller.update);
 router.delete('/:id', contentSourceContoller.delete);
 

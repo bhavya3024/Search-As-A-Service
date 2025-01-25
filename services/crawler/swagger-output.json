@@ -32,6 +32,12 @@
                 }
               }
             }
+          },
+          {
+            "in": "formData",
+            "name": "logo",
+            "type": "file",
+            "description": "The file to upload"
           }
         ],
         "responses": {

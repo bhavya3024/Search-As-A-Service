@@ -1,16 +1,26 @@
 const contentSourceRepoisotry = require('../repositories/content-source');
+const cloudinayService = require('../services/cloudinary-service');
 
 exports.create = async (req, res) => {
     try {
         const {
             name,
             url,
-            establishedYear
+            establishedYear,
         } = req.body;
+        const { path: logoFilePath } = req.file || {};
+        
+        const newContentSource = {
+            name,
+            url,
+            establishedYear,
+        };
+        if (logoFilePath) {
+            const url = await cloudinayService.uploadFile(logoFilePath);
+            newContentSource.logo = url;
+        }
 
-        const result = await contentSourceRepoisotry.create({
-            name, url, establishedYear
-        });
+        const result = await contentSourceRepoisotry.create({ ...newContentSource });
 
         return res.status(200).send({
             success: true,
