@@ -8,6 +8,11 @@ const requestParameter = {
     HEADERS: 'headers'
 }
 
+const security = {
+    PUBLIC: 'PUBLIC',
+    SECURE: 'SECURE',
+}
+
 
 module.exports = {
     GITHUB: {
@@ -18,6 +23,7 @@ module.exports = {
                 url: 'https://api.github.com/repositories',
                 method: 'GET',
                 elastic_index_prefix: 'github_repositories_',
+                security: [security.PUBLIC],
                 queryParams: {
                     since: {
                         type: 'number',
@@ -50,6 +56,7 @@ module.exports = {
                     issues: {
                         url: 'https://api.github.com/repos/:owner/:repo/issues',
                         method: 'GET',
+                        security: security.PUBLIC,
                         elastic_index_prefix: 'github_issues_',
                         pathParams: {
                             owner: {
@@ -115,6 +122,7 @@ module.exports = {
             search: {
                 url: 'https://api.stackexchange.com/2.3/search',
                 method: 'GET',
+                security: [security.PUBLIC],
                 elastic_index_prefix: 'stackoverflow_search_',
                 queryParams: {
                     site: {
@@ -158,12 +166,13 @@ module.exports = {
         }
     },
     THE_DOG_API: {
-        name: 'THE_DOG_API',
+        name: 'The Dog Api',
         url: 'https://thedogapi.com',
         apis: {
             breeds: {
                 url: 'https://api.thedogapi.com/v1/breeds',
                 method: 'GET',
+                security: [security.PUBLIC],
                 elastic_index_prefix: 'thedogapi_breeds_',
                 queryParams: {
                     page: {
@@ -195,6 +204,7 @@ module.exports = {
                 url: 'https://api.thecatapi.com/v1/breeds',
                 method: 'GET',
                 elastic_index_prefix: 'thecatapi_breeds_',
+                security: [security.PUBLIC],
                 queryParams: {
                     page: {
                         type: 'number',
@@ -213,6 +223,47 @@ module.exports = {
                     weight: ['weight'],
                     wikipedia_url: ['wikipedia_url'],
                     country_code: ['country_code'],
+                }
+            }
+        }
+    },
+    NEWS_API: {
+        name: 'News Api',
+        url: 'https://newsapi.org',
+        apis: {
+            everything: {
+                url: 'https://newsapi.org/v2/everything',
+                method: 'GET',
+                security: [security.SECURE],
+                queryParams: {
+                    q: {
+                        type: 'string',
+                        required: true,
+                        isPaginated: false
+                    },
+                    page: {
+                        type: 'number',
+                        required: true,
+                        isPaginated: true,
+                        paginationType: paginationType.INCREMENT,
+                    },
+                    apikey: {
+                        type: 'string',
+                        required: true,
+                        isSecure: true,
+                    }
+                },
+                fieldsToCrawl: {
+                    articles: [{
+                        source: ['source', 'name'],
+                        author: ['author'],
+                        title: ['title'],
+                        description: ['description'],
+                        url: ['url'],
+                        urlImage: ['urlToImage'],
+                        content: ['content'],
+                        publishedAt: ['publishedAt'],
+                    }]
                 }
             }
         }
