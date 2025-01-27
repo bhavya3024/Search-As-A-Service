@@ -32,8 +32,9 @@ module.exports = {
                         paginationType: paginationType.OFFSET,
                         nextPaginationKey: 'id',
                         requestParameter: requestParameter.BODY,
-                        nextPaginationIdFunction: (response) => {
-                            return response[response.length - 1].id;
+                        nextPaginationIdFunction: (response) => { //axios response
+                            const body = response.body;
+                            return body[body.length - 1].id;
                         }
                     }
                 },
@@ -182,14 +183,18 @@ module.exports = {
                         paginationType: paginationType.INCREMENT,
                     }
                 },
+                responseBodyHasItemsToCrawl: (response) => {
+                  return response.data.length > 0;
+                },
                 fieldsToCrawl: {
                     id: ['id'],
                     name: ['name'],
-                    description: ['description'],
+                    bred_for: ['bred_for'],
                     temperament: ['temperament'],
                     origin: ['origin'],
                     life_span: ['life_span'],
-                    weight: ['weight'],
+                    weightImerial: ['weight', 'imperial'],
+                    weightMetric: ['weight', 'metric'],
                     wikipedia_url: ['wikipedia_url'],
                     country_code: ['country_code'],
                 }
@@ -212,6 +217,9 @@ module.exports = {
                         isPaginated: true,
                         paginationType: paginationType.INCREMENT,
                     }
+                },
+                responseBodyHasItemsToCrawl: (response) => {
+                    return response.data.length > 0;
                 },
                 fieldsToCrawl: {
                     id: ['id'],
