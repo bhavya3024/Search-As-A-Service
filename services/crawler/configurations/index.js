@@ -1,3 +1,6 @@
+const { sleep } = require('../utils');
+
+
 const paginationType = {
     OFFSET: 'OFFSET',
     INCREMENT: 'INCREMENT',
@@ -41,19 +44,11 @@ module.exports = {
                 responseBodyHasItemsToCrawl: (response) => {
                     return response.data.length > 0;
                 },
-                responseBody: {
-                    type: 'array',
-                    fieldsToCrawl: {
-                        id: ['id'],
-                        node_id: ['node_id'],
-                        name: ['name'],
-                        full_name: ['full_name'],
-                        type: ['owner', 'type'],
-                        description: ['description'],
-                    }
+                checkIfTheQuotaExists: (response) => {
+                    return response.headers['x-ratelimit-remaining'] > 0;
                 },
                 crawlFields: (response) => {
-                    const fields = response.data.map((repository) => {  
+                    const fields = response.data.map((repository) => {
                         const {
                             id,
                             node_id,
@@ -68,54 +63,81 @@ module.exports = {
                             name,
                             full_name,
                             description,
-                            type:  owner.type,
+                            ...owner,
                         };
                     });
                     return fields;
                 },
                 childApis: [{
-                    parentResponseFields: {
-                        owner: ['owner', 'login'], // from parent response,
-                        repo: ['name'],
-                    },
-                    issues: {
-                        url: 'https://api.github.com/repos/:owner/:repo/issues',
-                        method: 'GET',
-                        security: security.PUBLIC,
-                        elastic_index_prefix: 'github_issues_',
-                        pathParams: {
-                            owner: {
-                                type: 'string',
-                                required: true,
-                                isPaginated: false
-                            },
-                            repo: {
-                                type: 'string',
-                                required: true,
-                                isPaginated: false
-                            },
-                        },
-                        queryParams: {
-                            page: {
-                                type: 'number',
-                                required: true,
-                                isPaginated: true,
-                                paginationType: paginationType.INCREMENT,
-                            }
-                        },
-                        fieldsToCrawl: {
-                            url: ['url'],
-                            repository_url: ['repository_url'],
-                            number: ['number'],
-                            title: ['title'],
-                            type: ['owner', 'type'],
-                            description: ['description'],
-                            body: ['body'],
-                            user: ['user', 'login'],
-                            userUrl: ['user', 'url'],
-                            created_at: ['created_at'],
-                            updated_at: ['updated_at'],
+                    extractFields: (fieldItem) => {
+                        return {
+                            owner: fieldItem.login,
+                            repo: fieldItem.name,
                         }
+                    },
+                    url: 'https://api.github.com/repos/:owner/:repo/issues',
+                    modifiedUrl: (url, fieldItem) => {
+                        return url.replace(':owner', fieldItem.owner).replace(':repo', fieldItem.repo);
+                    },
+                    method: 'GET',
+                    security: security.PUBLIC,
+                    elastic_index_prefix: 'github_issues_',
+                    pathParams: {
+                        owner: {
+                            type: 'string',
+                            required: true,
+                            isPaginated: false
+                        },
+                        repo: {
+                            type: 'string',
+                            required: true,
+                            isPaginated: false
+                        },
+                    },
+                    queryParams: {
+                        page: {
+                            type: 'number',
+                            required: true,
+                            isPaginated: true,
+                            paginationType: paginationType.INCREMENT,
+                        }
+                    },
+                    responseBodyHasItemsToCrawl: (response) => {
+                        return response.data.length > 0;
+                    },
+                    crawlFields: (response) => {
+                        const fields = response.data.map((issue) => {
+                            const {
+                                url,
+                                repository_url,
+                                number,
+                                title,
+                                type,
+                                description,
+                                body,
+                                user,
+                                created_at,
+                                updated_at,
+                            } = issue;
+                            return {
+                                url,
+                                repository_url,
+                                number,
+                                title,
+                                type,
+                                description,
+                                body,
+                                user: user.login,
+                                url: user.url,
+                                created_at,
+                                updated_at,
+                            };
+                        });
+                        return fields;
+                    },
+                    checkIfTheQuotaExists: (response) => {
+                        console.log('QUOTA REMAINING  ---->>>', response.headers['x-ratelimit-remaining']);
+                        return response.headers['x-ratelimit-remaining'] > 0;
                     }
                 }]
             },
@@ -147,8 +169,8 @@ module.exports = {
             search: {
                 url: 'https://api.stackexchange.com/2.3/search',
                 method: 'GET',
-                security: [security.PUBLIC],
-                elastic_index_prefix: 'stackoverflow_search_',
+                security: [security.SECURE],
+                elastic_index_prefix: 'stackoverflow_questions_',
                 queryParams: {
                     site: {
                         type: 'string',
@@ -167,28 +189,126 @@ module.exports = {
                         paginationType: paginationType.INCREMENT,
                     }
                 },
-            },
-            fieldsToCrawl: {
-                items: [{
-                    tags: ['tags'],
-                    ownerName: ['owner', 'display_name'],
-                    isAnswered: ['is_answered'],
-                    title: ['title'],
-                    link: ['link'],
+                handleTooManyReuests: async (response) => {
+                    const seconds = parseInt(response.headers['retry-after']);
+                    await new Promise((resolve) => {
+                        setTimeout(() => resolve(), seconds * 1000);    
+                    })
+                },
+                customSleep: async () => {
+                    await sleep(5);
+                },
+                responseBodyHasItemsToCrawl: (response) => {
+                    return response.data.items.length > 0;
+                },
+                checkIfTheQuotaExists: (response) => {
+                    return response.data.quota_remaining > 0;
+                },
+                crawlFields: (response) => {
+                    const fields = response.data.items.map((items) => {
+                        const {
+                            tags,
+                            owner,
+                            is_answered,
+                            view_count,
+                            answer_count,
+                            score,
+                            last_activity_date,
+                            creation_date,
+                            last_edit_date,
+                            question_id,
+                            content_license,
+                            link,
+                            title,
+                        } = items;
+                        return {
+                            tags,
+                            ...owner,
+                            is_answered,
+                            view_count,
+                            answer_count,
+                            score,
+                            last_activity_date,
+                            creation_date,
+                            last_edit_date,
+                            question_id,
+                            content_license,
+                            link,
+                            title,
+                        };
+                    });
+                    return fields;
+                },
+                childApis: [{
+                    url: 'https://api.stackexchange.com/2.3/questions/:question_id/answers',
+                    method: 'GET',
+                    security: [security.SECURE],
+                    extractFields: (fieldItem) => {
+                        return {
+                            question_id: fieldItem.question_id,
+                        }
+                    },
+                    modifiedUrl: (url, fieldItem) => {
+                        return url.replace(':question_id', fieldItem.question_id);
+                    },
+                    customSleep: async () => {
+                        await sleep(5);
+                    },
+                    elastic_index_prefix: 'stackoverflow_answers_',
+                    queryParams: {
+                        page: {
+                            type: 'number',
+                            required: true,
+                            isPaginated: true,
+                            paginationType: paginationType.INCREMENT,
+                        },
+                        sort: {
+                            type: 'string',
+                            required: false,
+                            isPaginated: false,
+                        }
+                    },
+                    responseBodyHasItemsToCrawl: (response) => {
+                        return response.data.items.length > 0;
+                    },
+                    checkIfTheQuotaExists: (response) => {
+                        return response.data.quota_remaining > 0;
+                    },
+                    handleTooManyReuests: async (response) => {
+                        const seconds = parseInt(response.headers['retry-after']);
+                        await new Promise((resolve) => {
+                            setTimeout(() => resolve(), seconds * 1000);    
+                        });
+                    },
+                    crawlFields: (response) => {
+                        const fields = response.data.items.map((item) => {
+                            const {
+                                owner,
+                                is_accepted,
+                                score,
+                                last_activity_date,
+                                creation_date,
+                                answer_id,
+                                question_id,
+                                content_license
+                            } = item;
+                            return {
+                                ...owner,
+                                is_accepted,
+                                score,
+                                last_activity_date,
+                                creation_date,
+                                answer_id,
+                                question_id,
+                                content_license
+                            };
+                        });
+                        return fields;
+                    },
                 }]
-            }
-        },
-        rateLimit: {
-            in: requestParameter.BODY,
-            limit: {
-                type: 'number',
-                key: 'quota_max',
+
             },
-            remaining: {
-                type: 'number',
-                key: 'quota_remaining',
-            }
-        }
+        },
     },
     THE_DOG_API: {
         name: 'The Dog Api',
@@ -208,7 +328,7 @@ module.exports = {
                     }
                 },
                 responseBodyHasItemsToCrawl: (response) => {
-                  return response.data.length > 0;
+                    return response.data.length > 0;
                 },
                 crawlFields: (response) => {
                     const fields = response.data.map((breed) => {
@@ -230,7 +350,7 @@ module.exports = {
                             origin,
                             life_span,
                             weightImerial: weight.imperial,
-                            weightMetric: weight.metric,   
+                            weightMetric: weight.metric,
                             country_code,
                         };
                     });

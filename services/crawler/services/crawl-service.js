@@ -2,6 +2,53 @@ const { default: axios } = require('axios');
 const configurations = require('../configurations');
 
 
+const childApis = async ({
+    moduleConfig,
+    field,
+    axiosQueryParams = {},
+    headers,
+}) => {
+    const childApis = moduleConfig.childApis;
+    if (!childApis?.length) {   
+        return;
+
+    }
+
+    for (const childApi of childApis) {
+        const extractFields = childApi.extractFields(field);
+        const { url, method, queryParams, body } = childApi;
+        let modifiedUrl = url;
+        if (childApi.modifiedUrl) { 
+            modifiedUrl = childApi.modifiedUrl(url, extractFields);
+        } 
+        Object.keys(queryParams).forEach((queryParam) => {
+            if (!queryParams[queryParam].isPaginated) {
+                if (queryParams[queryParam].required && !axiosQueryParams.hasOwnProperty(queryParam)) {
+                    console.log(`Required Query Parameter ${queryParam} is missing`);
+                    throw new Error(`Required Query Parameter ${queryParam} is missing`);
+                }
+            } else if (queryParams[queryParam].isPaginated) {
+                if (queryParams[queryParam].paginationType === 'INCREMENT') {
+                    axiosQueryParams[queryParam] = axiosQueryParams.hasOwnProperty(queryParam) ? axiosQueryParams[queryParam] : 1;
+                }
+            }
+        });
+        console.log('MODIFIED URL --->>>>', modifiedUrl);
+        await hitApi({
+            url: modifiedUrl,
+            method,
+            headers,
+            body,
+            params: axiosQueryParams,
+            apiConfigParams: queryParams,
+            moduleConfig: childApi,
+        });
+    }
+}
+
+
+
+
 const hitApi = async ({
     url,
     method,
@@ -25,7 +72,6 @@ const hitApi = async ({
         return;
     }
     const fields = moduleConfig.crawlFields(response);
-    console.log('FIELDS --->>>>', fields);
 
     Object.keys(apiConfigParams).forEach((queryParam) => {
         if (apiConfigParams[queryParam].isPaginated) {
@@ -36,6 +82,23 @@ const hitApi = async ({
             }
         }
     });
+
+    if (moduleConfig.checkIfTheQuotaExists && !moduleConfig.checkIfTheQuotaExists(response)) {
+        console.log('Quota Exceeded');
+        return;
+    }
+    if (moduleConfig.customSleep) {
+        await moduleConfig.customSleep();
+    }
+    for (const field of fields) {
+        await childApis({
+            moduleConfig,
+            field,
+            axiosQueryParams: {},
+            headers,
+        });
+    }
+
     await hitApi({
         url,
         method,
@@ -47,7 +110,28 @@ const hitApi = async ({
     })
 
   } catch (error) {
-    console.error('An Error Occured while hitting the API:', error);
+    console.error(error.status);
+    console.error(error.response.data);
+
+    if (error.status === 429) {
+        console.info('Too Many Requests, waiting for cooldown period');
+        moduleConfig.handleTooManyReuests &&  await moduleConfig.handleTooManyReuests(error.response);
+        console.info('Cooldown period over, resuming the requests');
+    }
+
+    if (moduleConfig.customSleep) {
+        await moduleConfig.customSleep();
+    }
+
+    await hitApi({
+        url,
+        method,
+        headers,
+        body,
+        params: queryParams,
+        apiConfigParams,
+        moduleConfig,
+    })
   }
 
 }
@@ -56,7 +140,8 @@ const hitApi = async ({
 exports.crawlApi = async ({
     moduleName,
     apiName,
-    axiosQueryParams
+    axiosQueryParams,
+    headers,
 }) => {
 
     const moduleConfig = configurations[moduleName].apis[apiName];
@@ -64,7 +149,7 @@ exports.crawlApi = async ({
         throw new Error('Invalid Module Name');
     }
 
-    const { url, method, queryParams, headers, body } = moduleConfig;
+    const { url, method, queryParams, body } = moduleConfig;
 
     Object.keys(queryParams).forEach((queryParam) => {
         if (!queryParams[queryParam].isPaginated) {

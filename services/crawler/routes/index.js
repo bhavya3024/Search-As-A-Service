@@ -24,13 +24,29 @@ router.get('/crawls', async (req, res) => {
 
 
     await crawlerService.crawlApi({
-        moduleName: ['GITHUB'],
-        apiName: 'repositories',
+        moduleName: ['STACKOVERFLOW'],
+        apiName: 'search',
         axiosQueryParams: {
-            page: 0,
-            limit: 10,
+            order: 'desc',
+            sort: 'activity',
+            intitle: 'javascript',
+            site: 'stackoverflow',
+            key: process.env.STACK_EXCHANGE_KEY,
         }
-    });
+    })
+
+
+    // await crawlerService.crawlApi({
+    //     moduleName: ['GITHUB'],
+    //     apiName: 'repositories',
+    //     axiosQueryParams: {
+    //         page: 0,
+    //         limit: 10,
+    //     },
+    //     headers: {
+    //         Authorization: `Bearer ${process.env.GITHUB_ACCESS_TOKEN}`
+    //     },
+    // });
 
     // await crawlerService.crawlApi({
     //     moduleName: ['THE_CAT_API'],
