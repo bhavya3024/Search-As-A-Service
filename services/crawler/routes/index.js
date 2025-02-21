@@ -13,23 +13,33 @@ const router = require('express').Router();
 
 /* testing purposes */
 router.get('/crawls', async (req, res) => {
+    // await crawlerService.crawlApi({
+    //     moduleName: ['THE_DOG_API'],
+    //     apiName: 'breeds',
+    //     axiosQueryParams: {
+    //         page: 0,
+    //         limit: 10,
+    //     }
+    // });
+
+
     await crawlerService.crawlApi({
-        moduleName: ['THE_DOG_API'],
-        apiName: 'breeds',
+        moduleName: ['GITHUB'],
+        apiName: 'repositories',
         axiosQueryParams: {
             page: 0,
             limit: 10,
         }
     });
 
-    await crawlerService.crawlApi({
-        moduleName: ['THE_CAT_API'],
-        apiName: 'breeds',
-        axiosQueryParams: {
-            page: 0,
-            limit: 10,
-        }
-    });
+    // await crawlerService.crawlApi({
+    //     moduleName: ['THE_CAT_API'],
+    //     apiName: 'breeds',
+    //     axiosQueryParams: {
+    //         page: 0,
+    //         limit: 10,
+    //     }
+    // });
 
     return res.sendStatus(200);
 

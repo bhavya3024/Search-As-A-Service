@@ -11,6 +11,7 @@ const hitApi = async ({
     apiConfigParams,
     moduleConfig,
 }) => {
+    try {
 
     let response = await axios({
         url,
@@ -23,8 +24,8 @@ const hitApi = async ({
     if (!moduleConfig.responseBodyHasItemsToCrawl(response)) { // check if the response body has the items to crawl.
         return;
     }
-    console.log('Crawling Data:', response.data);
-
+    const fields = moduleConfig.crawlFields(response);
+    console.log('FIELDS --->>>>', fields);
 
     Object.keys(apiConfigParams).forEach((queryParam) => {
         if (apiConfigParams[queryParam].isPaginated) {
@@ -45,6 +46,10 @@ const hitApi = async ({
         moduleConfig,
     })
 
+  } catch (error) {
+    console.error('An Error Occured while hitting the API:', error);
+  }
+
 }
 
 
@@ -63,17 +68,15 @@ exports.crawlApi = async ({
 
     Object.keys(queryParams).forEach((queryParam) => {
         if (!queryParams[queryParam].isPaginated) {
-            if (queryParams[queryParam].required && !axiosQueryParams[queryParam]) {
+            if (queryParams[queryParam].required && !axiosQueryParams.hasOwnProperty(queryParam)) {
                 console.log(`Required Query Parameter ${queryParam} is missing`);
                 throw new Error(`Required Query Parameter ${queryParam} is missing`);
             }
         } else if (queryParams[queryParam].isPaginated) {
             if (queryParams[queryParam].paginationType === 'INCREMENT') {
-                axiosQueryParams[queryParam] = 1;
+                axiosQueryParams[queryParam] = axiosQueryParams.hasOwnProperty(queryParam) ? axiosQueryParams[queryParam] : 1;
             }
         }
-
-
     });
     await hitApi({
         url,

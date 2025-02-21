@@ -33,10 +33,13 @@ module.exports = {
                         nextPaginationKey: 'id',
                         requestParameter: requestParameter.BODY,
                         nextPaginationIdFunction: (response) => { //axios response
-                            const body = response.body;
-                            return body[body.length - 1].id;
+                            const data = response.data;
+                            return data[data.length - 1].id;
                         }
                     }
+                },
+                responseBodyHasItemsToCrawl: (response) => {
+                    return response.data.length > 0;
                 },
                 responseBody: {
                     type: 'array',
@@ -48,6 +51,27 @@ module.exports = {
                         type: ['owner', 'type'],
                         description: ['description'],
                     }
+                },
+                crawlFields: (response) => {
+                    const fields = response.data.map((repository) => {  
+                        const {
+                            id,
+                            node_id,
+                            name,
+                            full_name,
+                            description,
+                            owner
+                        } = repository;
+                        return {
+                            id,
+                            node_id,
+                            name,
+                            full_name,
+                            description,
+                            type:  owner.type,
+                        };
+                    });
+                    return fields;
                 },
                 childApis: [{
                     parentResponseFields: {
@@ -186,18 +210,32 @@ module.exports = {
                 responseBodyHasItemsToCrawl: (response) => {
                   return response.data.length > 0;
                 },
-                fieldsToCrawl: {
-                    id: ['id'],
-                    name: ['name'],
-                    bred_for: ['bred_for'],
-                    temperament: ['temperament'],
-                    origin: ['origin'],
-                    life_span: ['life_span'],
-                    weightImerial: ['weight', 'imperial'],
-                    weightMetric: ['weight', 'metric'],
-                    wikipedia_url: ['wikipedia_url'],
-                    country_code: ['country_code'],
-                }
+                crawlFields: (response) => {
+                    const fields = response.data.map((breed) => {
+                        const {
+                            id,
+                            name,
+                            bred_for,
+                            temperament,
+                            origin,
+                            life_span,
+                            weight,
+                            country_code,
+                        } = breed;
+                        return {
+                            id,
+                            name,
+                            bred_for,
+                            temperament,
+                            origin,
+                            life_span,
+                            weightImerial: weight.imperial,
+                            weightMetric: weight.metric,   
+                            country_code,
+                        };
+                    });
+                    return fields;
+                },
             },
         },
     },
@@ -221,17 +259,34 @@ module.exports = {
                 responseBodyHasItemsToCrawl: (response) => {
                     return response.data.length > 0;
                 },
-                fieldsToCrawl: {
-                    id: ['id'],
-                    name: ['name'],
-                    description: ['description'],
-                    temperament: ['temperament'],
-                    origin: ['origin'],
-                    life_span: ['life_span'],
-                    weight: ['weight'],
-                    wikipedia_url: ['wikipedia_url'],
-                    country_code: ['country_code'],
-                }
+                crawlFields: (response) => {
+                    const fields = response.data.map((breed) => {
+                        const {
+                            id,
+                            name,
+                            description,
+                            temperament,
+                            origin,
+                            life_span,
+                            weight,
+                            wikipedia_url,
+                            country_code,
+                        } = breed;
+
+                        return {
+                            id,
+                            name,
+                            description,
+                            temperament,
+                            origin,
+                            life_span,
+                            weight,
+                            wikipedia_url,
+                            country_code,
+                        };
+                    });
+                    return fields;
+                },
             }
         }
     },
