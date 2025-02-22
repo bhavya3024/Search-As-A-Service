@@ -23,17 +23,17 @@ router.get('/crawls', async (req, res) => {
     // });
 
 
-    await crawlerService.crawlApi({
-        moduleName: ['STACKOVERFLOW'],
-        apiName: 'search',
-        axiosQueryParams: {
-            order: 'desc',
-            sort: 'activity',
-            intitle: 'javascript',
-            site: 'stackoverflow',
-            key: process.env.STACK_EXCHANGE_KEY,
-        }
-    })
+    // await crawlerService.crawlApi({
+    //     moduleName: ['STACKOVERFLOW'],
+    //     apiName: 'search',
+    //     axiosQueryParams: {
+    //         order: 'desc',
+    //         sort: 'activity',
+    //         intitle: 'javascript',
+    //         site: 'stackoverflow',
+    //         key: process.env.STACK_EXCHANGE_KEY,
+    //     }
+    // })
 
 
     // await crawlerService.crawlApi({
@@ -48,14 +48,14 @@ router.get('/crawls', async (req, res) => {
     //     },
     // });
 
-    // await crawlerService.crawlApi({
-    //     moduleName: ['THE_CAT_API'],
-    //     apiName: 'breeds',
-    //     axiosQueryParams: {
-    //         page: 0,
-    //         limit: 10,
-    //     }
-    // });
+    await crawlerService.crawlApi({
+        moduleName: ['THE_CAT_API'],
+        apiName: 'breeds',
+        axiosQueryParams: {
+            page: 0,
+            limit: 10,
+        }
+    });
 
     return res.sendStatus(200);
 

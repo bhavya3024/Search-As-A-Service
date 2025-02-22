@@ -73,6 +73,8 @@ const hitApi = async ({
     }
     const fields = moduleConfig.crawlFields(response);
 
+    console.log('FIELDS --->>>>>', fields);
+
     Object.keys(apiConfigParams).forEach((queryParam) => {
         if (apiConfigParams[queryParam].isPaginated) {
             if (apiConfigParams[queryParam].paginationType === 'OFFSET') {
