@@ -1,7 +1,5 @@
 const { paginationType, requestParameter, security } = require('../constants');
-
-
-
+const { sleep } = require('../utils');
 
 module.exports = {
     name: 'GITHUB',
@@ -28,7 +26,7 @@ module.exports = {
                 return response.data.length > 0;
             },
             checkIfTheQuotaExists: (response) => {
-                return response.headers['x-ratelimit-remaining'] > 0;
+                return response.headers['x-ratelimit-remaining'] >= 1;
             },
             filterQueryParamsInElastic: (queryParams) => {
                 return queryParams;
@@ -38,6 +36,15 @@ module.exports = {
                 await new Promise((resolve) => {
                     setTimeout(() => resolve(), seconds * 1000);
                 })
+            },
+            handleApiError: async (error) => {
+                if (error.status === 403) {
+                    if (error.response?.data?.message === 'Repository access blocked') {
+                        return true;
+                    }
+                }
+                return false;
+
             },
             crawlFields: (response) => {
                 const fields = response.data.map((repository) => {
@@ -133,7 +140,16 @@ module.exports = {
                 checkIfTheQuotaExists: (response) => {
                     console.log('QUOTA REMAINING  ---->>>', response.headers['x-ratelimit-remaining']);
                     return response.headers['x-ratelimit-remaining'] > 0;
-                }
+                },
+                handleApiError: async (error) => {
+                    if (error.status === 403) {
+                        if (error.response?.data?.message === 'Repository access blocked') {
+                            return true;
+                        }
+                    }
+                    return false;
+    
+                },
             }]
         },
     },

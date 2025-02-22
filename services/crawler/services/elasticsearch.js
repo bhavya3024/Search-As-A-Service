@@ -1,18 +1,19 @@
 const { Client } = require('@elastic/elasticsearch');
 
-const client = new Client({ 
-    node: 'https://localhost:9200',
-    auth: {
-        username: process.env.ELASTIC_USER,
-        password: process.env.ELASTIC_PASSWORD,
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
+const client = new Client({
+    node: 'http://localhost:9200',
 });
 (async () => {
-  const info =   await client.nodes.info();
+    // checking if the elastic connection is successful
+    await client.nodes.info();
 })();
+
+const handleElasticSearchErrors = (error) => {
+    if (error?.meta?.body?.error?.type === 'index_not_found_exception') { // first time indexing, so this error needs to be ignored
+        return null;
+    }
+    throw error;
+}
 
 
 exports.index = async (index, {
@@ -27,11 +28,56 @@ exports.index = async (index, {
                 data: field,
                 queryParams,
                 url,
+                createdAt: new Date().valueOf(),
+                updatedAt: new Date().valueOf(),
             }
         });
         return response;
     } catch (error) {
-        console.error('An Error Occured while indexing data:', error);
-        throw error;
+        return handleElasticSearchErrors(error);
+
     }
 };
+
+
+exports.fetchLastIndexItem = async (index) => {
+    try {
+        const { hits: { hits = [] } } = await client.search({
+            index,
+            body: {
+                size: 1,
+                sort: [{
+                    createdAt: {
+                        order: 'desc'
+                    }
+                }]
+            }
+        });
+        const [lastIndexedItem = null] = hits;
+        return lastIndexedItem;
+    } catch (error) {
+        return handleElasticSearchErrors(error);
+    }
+}
+
+
+
+
+exports.checkChildUrlExists = async (index, url) => {
+    try {
+        const response = await client.count({
+            index,
+            body: {
+                query: {
+                    term: {
+                        url
+                    }
+                }
+            }
+        });
+        console.log('RESPONSE COUNT --->>>>>', response);
+        return response.count > 0;
+    } catch (error) {
+        return handleElasticSearchErrors(error);
+    }
+} 

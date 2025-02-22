@@ -1,4 +1,5 @@
 const { paginationType, requestParameter, security } = require('../constants');
+const { sleep } = require('../utils');
 
 module.exports = {
     name: 'STACKOVERFLOW', // limitations, pages above 25 requires app key!
@@ -45,7 +46,7 @@ module.exports = {
                 await sleep(5);
             },
             responseBodyHasItemsToCrawl: (response) => {
-                return response.data.items.length > 0;
+                return response.data.items.length >= 1;
             },
             checkIfTheQuotaExists: (response) => {
                 return response.data.quota_remaining > 0;
@@ -111,6 +112,12 @@ module.exports = {
                     sort: {
                         type: 'string',
                         required: false,
+                        isPaginated: false,
+                    },
+                    site: {
+                        type: 'string',
+                        required: true,
+                        default: 'stackoverflow',
                         isPaginated: false,
                     }
                 },

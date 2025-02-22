@@ -1,18 +1,12 @@
-// const router = require('express').Router();
-// const contentSourcesRoute = require('./content-sources');
-// const apiConfigurationsRoute = require('./api-configurations');
-// const crawlsService = require('../services/api-crawl-service');
+
 
 const crawlerService = require('../services/crawl-service');
 const configurations = require('../configurations');
 
-// router.use('/content-sources', contentSourcesRoute);
-// router.use('/api-configurations', apiConfigurationsRoute);
-
 const router = require('express').Router();
 
-/* testing purposes */
 router.get('/crawls', async (req, res) => {
+
     // await crawlerService.crawlApi({
     //     moduleName: ['THE_DOG_API'],
     //     apiName: 'breeds',
@@ -21,6 +15,28 @@ router.get('/crawls', async (req, res) => {
     //         limit: 10,
     //     }
     // });
+
+
+    // await crawlerService.crawlApi({
+    //     moduleName: ['THE_CAT_API'],
+    //     apiName: 'breeds',
+    //     axiosQueryParams: {
+    //         page: 0,
+    //         limit: 10,
+    //     }
+    // });
+
+    await crawlerService.crawlApi({
+        moduleName: ['NEWS_API'],
+        apiName: 'searchNews',
+        axiosQueryParams: {
+            text: 'google',
+            ['api-key']: process.env.NEWS_API_KEY,
+        }
+    });
+
+
+
 
 
     // await crawlerService.crawlApi({
@@ -36,17 +52,16 @@ router.get('/crawls', async (req, res) => {
     // })
 
 
-    await crawlerService.crawlApi({
-        moduleName: ['GITHUB'],
-        apiName: 'repositories',
-        axiosQueryParams: {
-            page: 0,
-            limit: 10,
-        },
-        headers: {
-            Authorization: `Bearer ${process.env.GITHUB_ACCESS_TOKEN}`
-        },
-    });
+    // await crawlerService.crawlApi({
+    //     moduleName: ['GITHUB'],
+    //     apiName: 'repositories',
+    //     axiosQueryParams: {
+    //         limit: 10,
+    //     },
+    //     headers: {
+    //         Authorization: `Bearer ${process.env.GITHUB_ACCESS_TOKEN}`
+    //     },
+    // });
 
     // await crawlerService.crawlApi({
     //     moduleName: ['THE_CAT_API'],
