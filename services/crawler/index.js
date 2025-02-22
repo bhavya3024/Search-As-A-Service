@@ -21,6 +21,7 @@ app.use('/api/v1/', router);
     const swaggerAutoGenFile = require('./swagger-output.json');
     app.use('/api/v1/docs', swaggerUIExpress.serve, swaggerUIExpress.setup(swaggerAutoGenFile));
     app.listen(process.env.PORT || 3000, async () => {
+        require('./services/elasticsearch');
         await mongooseDatabseConnection();
     });
 // })

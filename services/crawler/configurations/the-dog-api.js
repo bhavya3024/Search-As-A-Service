@@ -21,6 +21,11 @@ module.exports = {
             responseBodyHasItemsToCrawl: (response) => {
                 return response.data.length > 0;
             },
+            filterQueryParamsInElastic: (queryParams) => {
+                return queryParams;
+            },
+            handleTooManyReuests: async (response) => {
+            },
             crawlFields: (response) => {
                 const fields = response.data.map((breed) => {
                     const {

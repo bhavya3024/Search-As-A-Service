@@ -13,7 +13,7 @@ module.exports = {
                 site: {
                     type: 'string',
                     required: true,
-                    isPaginated: false
+                    isPaginated: false,
                 },
                 intitle: {
                     type: 'string',
@@ -26,6 +26,14 @@ module.exports = {
                     isPaginated: true,
                     paginationType: paginationType.INCREMENT,
                 }
+            },
+            filterQueryParamsInElastic: (queryParams) => {
+                Object.keys(queryParams).forEach((queryParam) => {
+                    if (queryParam === 'key') {
+                        delete queryParams[queryParam];
+                    }
+                });
+                return queryParams;
             },
             handleTooManyReuests: async (response) => {
                 const seconds = parseInt(response.headers['retry-after']);
@@ -117,6 +125,14 @@ module.exports = {
                     await new Promise((resolve) => {
                         setTimeout(() => resolve(), seconds * 1000);
                     });
+                },
+                filterQueryParamsInElastic: (queryParams) => {
+                    // Object.keys(queryParams).forEach((queryParam) => {
+                    //     if (queryParam === 'key') {
+                    //         delete queryParams[queryParam];
+                    //     }
+                    // });
+                    return queryParams;
                 },
                 crawlFields: (response) => {
                     const fields = response.data.items.map((item) => {

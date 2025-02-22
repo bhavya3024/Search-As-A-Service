@@ -1,5 +1,6 @@
 const { default: axios } = require('axios');
 const configurations = require('../configurations');
+const elasticService = require('./elasticsearch');
 
 
 const childApis = async ({
@@ -73,7 +74,17 @@ const hitApi = async ({
     }
     const fields = moduleConfig.crawlFields(response);
 
-    console.log('FIELDS --->>>>>', fields);
+    for (const field of fields) {
+        // I don't want to store API keys in elastic. NO NO!!!
+       const elasticQueryParams = moduleConfig.filterQueryParamsInElastic(queryParams);
+       await elasticService.index(moduleConfig.elastic_index_prefix, {
+           field,
+           queryParams: elasticQueryParams,
+           url,
+       });
+    }
+
+
 
     Object.keys(apiConfigParams).forEach((queryParam) => {
         if (apiConfigParams[queryParam].isPaginated) {
@@ -84,6 +95,7 @@ const hitApi = async ({
             }
         }
     });
+    console.log('QUERY PARAMS --->>>>>', queryParams);
 
     if (moduleConfig.checkIfTheQuotaExists && !moduleConfig.checkIfTheQuotaExists(response)) {
         console.log('Quota Exceeded');
@@ -101,6 +113,8 @@ const hitApi = async ({
         });
     }
 
+
+
     await hitApi({
         url,
         method,
@@ -112,8 +126,8 @@ const hitApi = async ({
     })
 
   } catch (error) {
-    console.error(error.status);
-    console.error(error.response.data);
+    console.error(error);
+    // console.error(error?.response);
 
     if (error.status === 429) {
         console.info('Too Many Requests, waiting for cooldown period');

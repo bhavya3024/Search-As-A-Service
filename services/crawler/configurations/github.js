@@ -18,8 +18,6 @@ module.exports = {
                     required: true,
                     isPaginated: true,
                     paginationType: paginationType.OFFSET,
-                    nextPaginationKey: 'id',
-                    requestParameter: requestParameter.BODY,
                     nextPaginationIdFunction: (response) => { //axios response
                         const data = response.data;
                         return data[data.length - 1].id;
@@ -31,6 +29,15 @@ module.exports = {
             },
             checkIfTheQuotaExists: (response) => {
                 return response.headers['x-ratelimit-remaining'] > 0;
+            },
+            filterQueryParamsInElastic: (queryParams) => {
+                return queryParams;
+            },
+            handleTooManyReuests: async (response) => {
+                const seconds = parseInt(response.headers['retry-after']);
+                await new Promise((resolve) => {
+                    setTimeout(() => resolve(), seconds * 1000);
+                })
             },
             crawlFields: (response) => {
                 const fields = response.data.map((repository) => {
@@ -89,6 +96,9 @@ module.exports = {
                 },
                 responseBodyHasItemsToCrawl: (response) => {
                     return response.data.length > 0;
+                },
+                filterQueryParamsInElastic: (queryParams) => {
+                    return queryParams;
                 },
                 crawlFields: (response) => {
                     const fields = response.data.map((issue) => {

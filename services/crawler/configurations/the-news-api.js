@@ -27,6 +27,20 @@ module.exports = {
                     isSecure: true,
                 }
             },
+            filterQueryParamsInElastic: (queryParams) => {
+                // Object.keys(queryParams).forEach((queryParam) => {
+                //     if (queryParams[queryParam].isPaginated) {
+                //         delete queryParams[queryParam];
+                //     }
+                // });
+                return queryParams;
+            },
+            handleTooManyReuests: async (response) => {
+                // const seconds = parseInt(response.headers['retry-after']);
+                // await new Promise((resolve) => {
+                //     setTimeout(() => resolve(), seconds * 1000);
+                // })
+            },
             fieldsToCrawl: {
                 articles: [{
                     source: ['source', 'name'],

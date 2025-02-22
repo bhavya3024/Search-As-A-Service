@@ -17,6 +17,7 @@
     "url": "https://github.com/bhavya3024/search-as-a-service/issues"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.17.0",
     "axios": "^1.7.9",
     "cloudinary": "^2.5.1",
     "dotenv": "^16.4.7",

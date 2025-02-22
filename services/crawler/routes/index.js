@@ -36,26 +36,26 @@ router.get('/crawls', async (req, res) => {
     // })
 
 
-    // await crawlerService.crawlApi({
-    //     moduleName: ['GITHUB'],
-    //     apiName: 'repositories',
-    //     axiosQueryParams: {
-    //         page: 0,
-    //         limit: 10,
-    //     },
-    //     headers: {
-    //         Authorization: `Bearer ${process.env.GITHUB_ACCESS_TOKEN}`
-    //     },
-    // });
-
     await crawlerService.crawlApi({
-        moduleName: ['THE_CAT_API'],
-        apiName: 'breeds',
+        moduleName: ['GITHUB'],
+        apiName: 'repositories',
         axiosQueryParams: {
             page: 0,
             limit: 10,
-        }
+        },
+        headers: {
+            Authorization: `Bearer ${process.env.GITHUB_ACCESS_TOKEN}`
+        },
     });
+
+    // await crawlerService.crawlApi({
+    //     moduleName: ['THE_CAT_API'],
+    //     apiName: 'breeds',
+    //     axiosQueryParams: {
+    //         page: 0,
+    //         limit: 10,
+    //     }
+    // });
 
     return res.sendStatus(200);
 
