@@ -1,7 +1,8 @@
 const User = require('../models/users');
-const sendEmail = require('./resend-service');
 const otpService = require('./otp-service');
+const sendEmail = require('../services/resend-service');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const createUser = async (userData) => {
   // Check if email already exists
@@ -20,7 +21,7 @@ const createUser = async (userData) => {
 
   // Send OTP email
   const otpEmailContent = `<p>Your OTP for verification is: ${user.otp}</p>`;
-  await sendEmail('no-reply@yourapp.com', 'Your App', user.email, user.fullName, 'OTP Verification', otpEmailContent);
+  await sendEmail(process.env.RESEND_EMAIL, 'Your App', user.email, user.fullName, 'OTP Verification', otpEmailContent);
 
   return user;
 };
@@ -38,7 +39,9 @@ const verifyOtp = async (userId, otp) => {
 const loginUser = async (email, password) => {
   const user = await User.findOne({ email });
   if (user && await bcrypt.compare(password, user.password)) {
-    return user;
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return { user, token };
   }
   throw new Error('Invalid email or password');
 };
@@ -52,7 +55,7 @@ const sendResetPasswordEmail = async (email) => {
   user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
   await user.save();
 
-  const resetUrl = `http://localhost:${process.env.PORT || 3001}/reset-password/${token}`;
+  const resetUrl = `http://yourapp.com/reset-password/${token}`;
   await sendEmail('no-reply@yourapp.com', 'Your App', user.email, user.fullName, 'Password Reset', '', `<p>Click <a href="${resetUrl}">here</a> to reset your password</p>`);
 };
 

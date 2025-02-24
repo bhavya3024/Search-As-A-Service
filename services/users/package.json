@@ -5,6 +5,11 @@
     "express-joi-validation": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
-    "node-mailjet": "^6.0.6"
+    "node-mailjet": "^6.0.6",
+    "otp-generator": "^4.0.1",
+    "resend": "^4.1.2"
+  },
+  "scripts": {
+    "start": "node index.js"
   }
 }

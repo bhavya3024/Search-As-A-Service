@@ -13,7 +13,7 @@ const verifyOtp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
     const verified = await userService.verifyOtp(userId, otp);
-    res.status(200).json({ verified });
+    res.status(verified ? 200 : 400).json({ verified });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

@@ -5,8 +5,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const sendEmail = async (fromEmail, fromName, toEmail, toName, subject, htmlPart) => {
   try {
     await resend.emails.send({
-      from: `${fromName} <${fromEmail}>`,
-      to: `${toName} <${toEmail}>`,
+      from: fromEmail,
+      to: toEmail,
       subject: subject,
       html: htmlPart
     });
