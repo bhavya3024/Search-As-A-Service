@@ -2,59 +2,68 @@ const userService = require('../services/user-service');
 
 const signUp = async (req, res) => {
   try {
-    const user = await userService.createUser(req.body);
-    res.status(201).json(user);
+    const { success, result, code, message } = await userService.createUser(req.body);
+    if (!success) return res.status(code).json({ message });
+    return res.status(201).json({ result });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const verifyOtp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
-    const verified = await userService.verifyOtp(userId, otp);
-    res.status(verified ? 200 : 400).json({ verified });
+    const { success, result, message, code } = await userService.verifyOtp(userId, otp);
+    if (!success) return res.status(code).json({ message });
+    return res.status(200).json({ result });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await userService.loginUser(email, password);
-    res.status(200).json(user);
+    const { success, message, result } = await userService.loginUser(email, password);
+    if (success) {
+      return res.status(200).json({ result });
+    } else {
+      return res.status(401).json({ message });
+    } 
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const sendResetPasswordEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    await userService.sendResetPasswordEmail(email);
-    res.status(200).json({ message: 'Password reset email sent' });
+    const { success, message, code } = await userService.sendResetPasswordEmail(email);
+    if (!success) return res.status(code).json({ message });
+    return res.status(success ? 200 : code).json({ message });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    await userService.resetPassword(token, newPassword);
-    res.status(200).json({ message: 'Password has been reset' });
+    const { success, message, code } =  await userService.resetPassword(token, newPassword);
+    if (!success) return res.status(code).json({ message });
+    return res.status(200).json({ message });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const getProfile = async (req, res) => {
   try {
-    const user = await userService.getUserProfile(req.user.id);
-    res.status(200).json(user);
+    const { success, result, code, message } = await userService.getUserProfile(req.user.id);
+    if (!success) return res.status(code).json({ message });
+    return res.status(200).json({ result });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -76,10 +85,10 @@ const getResetPasswordHtml = (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const user = await userService.updateUser(req.user.id, req.body);
-    res.status(200).json(user);
+    await userService.updateUser(req.user.id, req.body);
+    return res.sendStatus(204);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
