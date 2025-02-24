@@ -230,6 +230,7 @@ process.on('message',  async (message) => {
         apiName: 'breeds',
         axiosQueryParams: {
             page: 1,
+            limit: 10,
         }
     });
     process.exit();
