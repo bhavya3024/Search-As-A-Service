@@ -62,7 +62,7 @@ const getResetPasswordHtml = (req, res) => {
   const htmlContent = `
     <html>
       <body>
-        <form action="/api/users/reset-password" method="POST">
+        <form action="/api/v1/users/reset-password" method="POST">
           <input type="hidden" name="token" value="${req.query.token}" />
           <label for="newPassword">New Password:</label>
           <input type="password" id="newPassword" name="newPassword" required />

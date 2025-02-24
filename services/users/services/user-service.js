@@ -55,8 +55,8 @@ const sendResetPasswordEmail = async (email) => {
   user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
   await user.save();
 
-  const resetUrl = `http://yourapp.com/reset-password/${token}`;
-  await sendEmail('no-reply@yourapp.com', 'Your App', user.email, user.fullName, 'Password Reset', '', `<p>Click <a href="${resetUrl}">here</a> to reset your password</p>`);
+  const resetUrl = `http://localhost:3001/api/v1/users/reset-password-html?token=${token}`;
+  await sendEmail(process.env.RESEND_EMAIL, 'Your App', user.email, user.fullName, 'Password Reset', `<p>Click <a href="${resetUrl}">here</a> to reset your password</p>`);
 };
 
 const resetPassword = async (token, newPassword) => {
@@ -70,7 +70,8 @@ const resetPassword = async (token, newPassword) => {
 };
 
 const getUserProfile = async (userId) => {
-  const user = await User.findById(userId).select('-password');
+  const user = await User.findById(userId).select('-password').select('-otp').select('-otpVerified').select('-resetPasswordToken').select('-resetPasswordExpires');
+  if (!user) throw new Error('User not found');
   return user;
 };
 
