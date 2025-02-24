@@ -2,9 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const mongooseDatabseConnection = require('./database');
 const app = express();
-const router = require('./routes');
-const swaggerAutoGen = require('swagger-autogen')();
-const swaggerUIExpress = require('swagger-ui-express');
+require('./routes');
+// const swaggerAutoGen = require('swagger-autogen')();
+// const swaggerUIExpress = require('swagger-ui-express');
 app.use(express.json());
 
 const doc = {
@@ -14,12 +14,11 @@ const doc = {
     },
     host: process.env.HOST || `localhost:${process.env.PORT || 3000}`,
 }
-const outputFile = './swagger-output.json';
-const routes = ['./index.js'];
-app.use('/api/v1/', router);
+
+// app.use('/api/v1/', router);
 // swaggerAutoGen(outputFile, routes, doc).then(() => {
-    const swaggerAutoGenFile = require('./swagger-output.json');
-    app.use('/api/v1/docs', swaggerUIExpress.serve, swaggerUIExpress.setup(swaggerAutoGenFile));
+//    const swaggerAutoGenFile = require('./swagger-output.json');
+//    app.use('/api/v1/docs', swaggerUIExpress.serve, swaggerUIExpress.setup(swaggerAutoGenFile));
     app.listen(process.env.PORT || 3000, async () => {
         require('./services/elasticsearch');
         await mongooseDatabseConnection();

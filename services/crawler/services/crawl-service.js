@@ -190,7 +190,6 @@ exports.crawlApi = async ({
     axiosQueryParams,
     headers,
 }) => {
-
     const moduleConfig = configurations[moduleName].apis[apiName];
     if (!moduleConfig) {
         throw new Error('Invalid Module Name');
@@ -222,3 +221,16 @@ exports.crawlApi = async ({
 
 
 }
+
+
+process.on('message',  async (message) => {
+    console.log('MESSAGE ---->>>>', message);
+    await this.crawlApi({
+        moduleName: [message],
+        apiName: 'breeds',
+        axiosQueryParams: {
+            page: 1,
+        }
+    });
+    process.exit();
+});

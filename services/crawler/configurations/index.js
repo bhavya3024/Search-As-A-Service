@@ -1,6 +1,3 @@
-const github = require("./github")
-
-
 module.exports = {
     GITHUB: require('./github'),
     STACKOVERFLOW: require('./stackoverflow'),
