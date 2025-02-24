@@ -35,7 +35,6 @@ exports.index = async (index, {
         return response;
     } catch (error) {
         return handleElasticSearchErrors(error);
-
     }
 };
 

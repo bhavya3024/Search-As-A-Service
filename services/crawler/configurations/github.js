@@ -9,7 +9,6 @@ module.exports = {
             url: 'https://api.github.com/repositories',
             method: 'GET',
             elastic_index_prefix: 'github_repositories_',
-            security: [security],
             queryParams: {
                 since: {
                     type: 'number',
@@ -21,6 +20,13 @@ module.exports = {
                         return data[data.length - 1].id;
                     }
                 }
+            },
+            headers: {
+                authorization: {
+                    type: 'string',
+                    required: true,
+                    isSecure: true,
+                },
             },
             responseBodyHasItemsToCrawl: (response) => {
                 return response.data.length > 0;

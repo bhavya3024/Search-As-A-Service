@@ -1,9 +1,10 @@
 const { default: axios } = require('axios');
 const configurations = require('../configurations');
 const elasticService = require('./elasticsearch');
+const { v4: uuidv4 } = require('uuid');
 
 
-const childApis = async ({
+const executeChildApis = async ({
     moduleConfig,
     field,
     axiosQueryParams = {},
@@ -14,6 +15,9 @@ const childApis = async ({
         return;
     }
 
+    // Extract UUID from parent's elastic index
+    const parentUUID = moduleConfig.elastic_index.split('_').pop();
+
     for (const childApi of childApis) {
         const extractFields = childApi.extractFields(field);
         const { url, method, queryParams, body } = childApi;
@@ -23,7 +27,10 @@ const childApis = async ({
         }
         validateQueryParams(queryParams, axiosQueryParams);
 
-        const modififedUrlExists = await elasticService.checkChildUrlExists(childApi.elastic_index_prefix, modifiedUrl);
+        // Use parent's UUID with child's prefix
+        const childElasticIndex = `${childApi.elastic_index_prefix}${parentUUID}`.toLowerCase();
+
+        const modififedUrlExists = await elasticService.checkChildUrlExists(childElasticIndex, modifiedUrl);
         if (modififedUrlExists) {
             console.log('URL Already Exists', modifiedUrl);
             continue;
@@ -35,7 +42,10 @@ const childApis = async ({
             body,
             params: axiosQueryParams,
             apiConfigParams: queryParams,
-            moduleConfig: childApi,
+            moduleConfig: {
+                ...childApi,
+                elastic_index: childElasticIndex
+            },
         });
     }
 }
@@ -82,7 +92,6 @@ const hitApi = async ({
     moduleConfig,
 }) => {
     try {
-
         let response = await axios({
             url,
             method,
@@ -91,10 +100,9 @@ const hitApi = async ({
             params: queryParams,
         });
 
-        if (!moduleConfig.responseBodyHasItemsToCrawl(response)) { // check if the response body has the items to crawl.
+        if (!moduleConfig.responseBodyHasItemsToCrawl(response)) {
             return;
         }
-
 
         if (moduleConfig.checkIfTheQuotaExists && !moduleConfig.checkIfTheQuotaExists(response)) {
             console.log('Quota Exceeded');
@@ -104,30 +112,32 @@ const hitApi = async ({
         const fields = moduleConfig.crawlFields(response);
 
         for (const field of fields) {
-            // I don't want to store API keys in elastic. NO NO!!!
+            // Filter out secure params before storing in elastic
             const elasticQueryParams = moduleConfig.filterQueryParamsInElastic({
                 ...queryParams
             });
-            await elasticService.index(moduleConfig.elastic_index_prefix, {
+            
+            // Use the elastic_index directly instead of as a prefix
+            await elasticService.index(moduleConfig.elastic_index, {
                 field,
                 queryParams: elasticQueryParams,
                 url,
             });
         }
+
+        // Handle pagination
         incrementPagination(apiConfigParams, queryParams, response);
-        console.log('QUERY PARAMS --->>>>>', queryParams);
+        console.log('Updated query params after pagination:', queryParams);
 
         if (moduleConfig.customSleep) {
             await moduleConfig.customSleep();
         }
 
+        // Handle child APIs if any
         const childApis = moduleConfig?.childApis;
-
-
-
         if (childApis?.length) {
             for (const field of fields) {
-                await childApis({
+                await executeChildApis({
                     moduleConfig,
                     field,
                     axiosQueryParams: {},
@@ -136,37 +146,8 @@ const hitApi = async ({
             }
         }
 
-
-
-        await hitApi({
-            url,
-            method,
-            headers,
-            body,
-            params: queryParams,
-            apiConfigParams,
-            moduleConfig,
-        })
-
-    } catch (error) {
-        console.error(error);
-        // console.error(error?.response);
-        let retry = false;
-
-        if (error.status === 429) {
-            console.info('Too Many Requests, waiting for cooldown period');
-            moduleConfig.handleTooManyReuests && await moduleConfig.handleTooManyReuests(error.response);
-            retry = true
-            console.info('Cooldown period over, resuming the requests');
-        } else if (moduleConfig.handleApiError && typeof moduleConfig.handleApiError === 'function') {
-            const skip = moduleConfig.handleApiError(error);
-            if (skip) {
-                retry = true;
-                // incrementPagination(apiConfigParams, queryParams);
-            }
-        }
-
-        if (retry) {
+        // Recursively call hitApi with updated pagination
+        if (moduleConfig.responseBodyHasItemsToCrawl(response)) {
             await hitApi({
                 url,
                 method,
@@ -175,13 +156,14 @@ const hitApi = async ({
                 params: queryParams,
                 apiConfigParams,
                 moduleConfig,
-            })
-        } else {
-            throw new Error('API Error', error);
+            });
         }
-    }
 
-}
+    } catch (error) {
+        console.error('Error in hitApi:', error);
+        throw error;
+    }
+};
 
 
 exports.crawlApi = async ({
@@ -189,7 +171,9 @@ exports.crawlApi = async ({
     apiName,
     axiosQueryParams,
     headers,
+    elasticIndex
 }) => {
+    console.log('ATTACHING HERE --->>>>>>');
     const moduleConfig = configurations[moduleName].apis[apiName];
     if (!moduleConfig) {
         throw new Error('Invalid Module Name');
@@ -197,14 +181,15 @@ exports.crawlApi = async ({
 
     const { url, method, queryParams, body } = moduleConfig;
 
-    const fetchLastIndexItem = await elasticService.fetchLastIndexItem(moduleConfig.elastic_index_prefix);
+    // Get the UUID from the elasticIndex
+    // const uuid = elasticIndex.split('_').pop();
+
+    const fetchLastIndexItem = await elasticService.fetchLastIndexItem(elasticIndex);
     if (fetchLastIndexItem) {
         const queryParams = fetchLastIndexItem._source.queryParams;
-        console.log('QUERYPARMS -->>>', queryParams);
         Object.keys(queryParams).forEach(key => {
             axiosQueryParams[key] = queryParams[key];
         });
-        console.log('AXIOS QUERY PARAMS --->>>>', axiosQueryParams);
     }
 
     validateQueryParams(queryParams, axiosQueryParams);
@@ -216,22 +201,11 @@ exports.crawlApi = async ({
         body,
         params: axiosQueryParams,
         apiConfigParams: queryParams,
-        moduleConfig,
+        moduleConfig: {
+            ...moduleConfig,
+            elastic_index: elasticIndex,
+            elastic_index_prefix: moduleConfig.elastic_index_prefix,
+            crawlerName: moduleName
+        },
     });
-
-
 }
-
-
-process.on('message',  async (message) => {
-    console.log('MESSAGE ---->>>>', message);
-    await this.crawlApi({
-        moduleName: [message],
-        apiName: 'breeds',
-        axiosQueryParams: {
-            page: 1,
-            limit: 10,
-        }
-    });
-    process.exit();
-});
