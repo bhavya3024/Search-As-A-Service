@@ -4,7 +4,9 @@
   "workspaces": [
     "services/*"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "express": "^4.21.2"
+  },
   "devDependencies": {
     "lerna": "^8.1.9"
   },
