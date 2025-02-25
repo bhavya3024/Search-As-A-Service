@@ -82,11 +82,3 @@ To add a new crawler:
 2. Insert a crawler document in the MongoDB collection
 3. Restart the queue manager to process the new crawler
 
-## Monitoring
-
-You can monitor the crawler execution through the console output:
-
-```bash
-# Start the manager with output to console
-node services/crawler-queue-manager.js
-```
