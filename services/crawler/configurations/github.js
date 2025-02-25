@@ -48,6 +48,7 @@ module.exports = {
                     if (error.response?.data?.message === 'Repository access blocked') {
                         return true;
                     }
+                    return false;
                 }
                 return false;
 

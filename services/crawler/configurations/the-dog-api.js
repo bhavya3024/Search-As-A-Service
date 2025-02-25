@@ -17,6 +17,12 @@ module.exports = {
                     required: true,
                     isPaginated: true,
                     paginationType: paginationType.INCREMENT,
+                },
+                limit: {
+                    type: 'number',
+                    required: true,
+                    isPaginated: false,
+                    default: 10,
                 }
             },
             responseBodyHasItemsToCrawl: (response) => {

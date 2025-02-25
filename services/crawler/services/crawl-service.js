@@ -9,6 +9,7 @@ const executeChildApis = async ({
     field,
     axiosQueryParams = {},
     headers,
+    elasticUuid,
 }) => {
     const childApis = moduleConfig.childApis;
     if (!childApis?.length) {
@@ -16,7 +17,6 @@ const executeChildApis = async ({
     }
 
     // Extract UUID from parent's elastic index
-    const parentUUID = moduleConfig.elastic_index.split('_').pop();
 
     for (const childApi of childApis) {
         const extractFields = childApi.extractFields(field);
@@ -28,7 +28,7 @@ const executeChildApis = async ({
         validateQueryParams(queryParams, axiosQueryParams);
 
         // Use parent's UUID with child's prefix
-        const childElasticIndex = `${childApi.elastic_index_prefix}${parentUUID}`.toLowerCase();
+        const childElasticIndex = `${childApi.elastic_index_prefix}${elasticUuid}`.toLowerCase();
 
         const modififedUrlExists = await elasticService.checkChildUrlExists(childElasticIndex, modifiedUrl);
         if (modififedUrlExists) {
@@ -44,8 +44,8 @@ const executeChildApis = async ({
             apiConfigParams: queryParams,
             moduleConfig: {
                 ...childApi,
-                elastic_index: childElasticIndex
             },
+            elasticUuid,
         });
     }
 }
@@ -53,8 +53,12 @@ const executeChildApis = async ({
 const incrementPagination = (apiConfigParams, queryParams, response) => {
     Object.keys(apiConfigParams).forEach((queryParam) => {
         if (apiConfigParams[queryParam].isPaginated) {
-            if (apiConfigParams[queryParam].paginationType === 'OFFSET' && response) {
-                queryParams[queryParam] = apiConfigParams[queryParam].nextPaginationIdFunction(response);
+            if (apiConfigParams[queryParam].paginationType === 'OFFSET') {
+                if (response) {
+                   queryParams[queryParam] = apiConfigParams[queryParam].nextPaginationIdFunction(response);
+                } else {
+                   queryParams[queryParam] += 10;
+                }
             } else if (apiConfigParams[queryParam].paginationType === 'INCREMENT') {
                 queryParams[queryParam] += 1;
             }
@@ -90,8 +94,10 @@ const hitApi = async ({
     params: queryParams,
     apiConfigParams,
     moduleConfig,
+    elasticUuid,
 }) => {
     try {
+        console.log('URL -->>', url);
         let response = await axios({
             url,
             method,
@@ -118,7 +124,7 @@ const hitApi = async ({
             });
             
             // Use the elastic_index directly instead of as a prefix
-            await elasticService.index(moduleConfig.elastic_index, {
+            await elasticService.index(moduleConfig.elastic_index_prefix + elasticUuid, {
                 field,
                 queryParams: elasticQueryParams,
                 url,
@@ -142,6 +148,7 @@ const hitApi = async ({
                     field,
                     axiosQueryParams: {},
                     headers,
+                    elasticUuid,
                 });
             }
         }
@@ -160,8 +167,25 @@ const hitApi = async ({
         }
 
     } catch (error) {
-        console.error('Error in hitApi:', error);
-        throw error;
+        if (moduleConfig.handleApiError) {
+            const skip = moduleConfig.handleApiError(error);
+            if (!skip) {
+                throw error;
+            } else {
+                incrementPagination(apiConfigParams, queryParams);
+                await hitApi({
+                    url,
+                    method,
+                    headers,
+                    body,
+                    params: queryParams,
+                    apiConfigParams,
+                    moduleConfig,
+                });
+            }
+        } else {
+            throw error;
+        }
     }
 };
 
@@ -171,7 +195,7 @@ exports.crawlApi = async ({
     apiName,
     axiosQueryParams,
     headers,
-    elasticIndex
+    elasticUuid,
 }) => {
     console.log('ATTACHING HERE --->>>>>>');
     const moduleConfig = configurations[moduleName].apis[apiName];
@@ -184,7 +208,7 @@ exports.crawlApi = async ({
     // Get the UUID from the elasticIndex
     // const uuid = elasticIndex.split('_').pop();
 
-    const fetchLastIndexItem = await elasticService.fetchLastIndexItem(elasticIndex);
+    const fetchLastIndexItem = await elasticService.fetchLastIndexItem(moduleConfig.elastic_index_prefix + elasticUuid);
     if (fetchLastIndexItem) {
         const queryParams = fetchLastIndexItem._source.queryParams;
         Object.keys(queryParams).forEach(key => {
@@ -203,9 +227,19 @@ exports.crawlApi = async ({
         apiConfigParams: queryParams,
         moduleConfig: {
             ...moduleConfig,
-            elastic_index: elasticIndex,
-            elastic_index_prefix: moduleConfig.elastic_index_prefix,
             crawlerName: moduleName
         },
+        elasticUuid,
     });
 }
+
+
+process.on('message', (obj) => {
+    this.crawlApi({
+        moduleName: obj.crawlerName.toUpperCase(),
+        apiName: obj.apiName,
+        axiosQueryParams: obj.queryParams,
+        headers: obj.headers,
+        elasticUuid: obj.elasticUUID,
+    })
+})
