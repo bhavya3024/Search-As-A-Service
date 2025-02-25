@@ -1,4 +1,7 @@
+const Crawler = require('../models/crawler');
 const crawlerService = require('../services/crawler-service');
+const configurations = require('../configurations');
+const elasticService = require('../services/elasticsearch');
 
 exports.createCrawler = async (req, res) => {
   try {
@@ -67,3 +70,6 @@ exports.deleteCrawler = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+

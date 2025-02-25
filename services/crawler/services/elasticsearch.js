@@ -79,4 +79,32 @@ exports.checkChildUrlExists = async (index, url) => {
     } catch (error) {
         return handleElasticSearchErrors(error);
     }
-} 
+}
+
+
+exports.search = async ({
+    indexes = [],
+    query = '',
+    limit = 10,
+    page = 1,
+}) => {
+    try {
+        const response = await client.search({
+            index: indexes,
+            body: {
+                from: (page - 1) * limit,
+                size: limit,
+                query: {
+                    query_string: {
+                        query,
+                        fields: ["data.*"],
+                        lenient: true
+                    }
+                }
+            }
+        });
+        return response;
+    } catch (error) {
+        return handleElasticSearchErrors(error);
+    }
+}
